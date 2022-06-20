@@ -11,25 +11,31 @@ let package = Package(
         .macOS(.v10_14),
     ],
     products: [
-        .library(
+        /*.library(
             name: "AltSign-Dynamic",
             type: .dynamic,
-            targets: ["AltSign", "CAltSign", "CoreCrypto", "CCoreCrypto", "ldid", "ldid-core", "OpenSSL"]
-        ),
+            targets: ["AltSign", "CAltSign", "CoreCrypto", "CCoreCrypto", "ldid", "ldid-core"]
+        ),*/
         .library(
-            name: "AltSign-Static",
+            name: "AltSign",
+            //type: .static,
             targets: ["AltSign", "CAltSign", "CoreCrypto", "CCoreCrypto", "ldid", "ldid-core"]
         ),
     ],
-    dependencies: [],
+    
+    dependencies: [
+        .package(url: "https://github.com/krzyzanowskim/OpenSSL.git", .upToNextMinor(from: "1.1.180"))
+    ],
+    
     targets: [
-        .binaryTarget(
+        /*.binaryTarget(
             name: "OpenSSL",
             path: "Dependencies/OpenSSL/Frameworks/OpenSSL.xcframework"
-        ),
+        ),*/
         
         .target(
             name: "ldid-core",
+            dependencies: ["OpenSSL"],
             path: "Dependencies/ldid",
             exclude: [
                 "ldid.hpp",
@@ -77,7 +83,7 @@ let package = Package(
                 .headerSearchPath("libplist/include"),
                 .headerSearchPath("libplist/src"),
                 .headerSearchPath("libplist/libcnary/include"),
-                .headerSearchPath("../OpenSSL/ios/include"),
+//                .headerSearchPath("../OpenSSL/ios/include"),
             ]
         ),
         .target(
@@ -96,7 +102,7 @@ let package = Package(
                 .headerSearchPath("../../Dependencies/ldid/libplist/include"),
                 .headerSearchPath("../../Dependencies/ldid/libplist/src"),
                 .headerSearchPath("../../Dependencies/ldid/libplist/libcnary/include"),
-                .headerSearchPath("../../Dependencies/OpenSSL/ios/include"),
+//                .headerSearchPath("../../Dependencies/OpenSSL/ios/include"),
             ]
         ),
         
@@ -137,7 +143,7 @@ let package = Package(
                 "AltSign/include/module.modulemap",
                 "Dependencies/corecrypto",
                 "Dependencies/ldid",
-                "Dependencies/OpenSSL",
+//                "Dependencies/OpenSSL",
                 "Dependencies/minizip/iowin32.c",
                 "Dependencies/minizip/Makefile",
                 "Dependencies/minizip/minizip.c",
@@ -150,7 +156,7 @@ let package = Package(
                 .headerSearchPath("AltSign/ldid"),
                 .headerSearchPath("Dependencies/minizip"),
                 .headerSearchPath("AltSign/Capabilities"),
-                .headerSearchPath("Dependencies/OpenSSL/ios/include"),
+//                .headerSearchPath("Dependencies/OpenSSL/ios/include"),
                 .headerSearchPath("Dependencies/ldid/libplist/include"),
                 .headerSearchPath("Dependencies/ldid"),
                 .define("unix=1"),
