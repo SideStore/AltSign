@@ -11,7 +11,21 @@ import Foundation
 @_exported import CAltSign
 import CAltSign.Private
 
-public extension ALTAppleAPI {
+public extension ALTAppleAPIError
+{
+    static func unknown(userInfo: [String: Any] = [:], sourceFile: String = #fileID, sourceLine: UInt = #line) -> ALTAppleAPIError
+    {
+        var userInfo = userInfo
+        userInfo[ALTSourceFileErrorKey] = sourceFile
+        userInfo[ALTSourceLineErrorKey] = sourceLine
+        
+        let error = ALTAppleAPIError(.unknown, userInfo: userInfo)
+        return error
+    }
+}
+
+public extension ALTAppleAPI
+{
     @objc func authenticate(appleID unsanitizedAppleID: String,
                             password: String,
                             anisetteData: ALTAnisetteData,
@@ -215,11 +229,12 @@ private extension ALTAppleAPI {
 
                         var request = self.makeTwoFactorCodeRequest(url: verifyURL, dsid: dsid, idmsToken: idmsToken, anisetteData: anisetteData)
                         request.allHTTPHeaderFields?["security-code"] = verificationCode
-
-                        let verifyCodeTask = self.session.dataTask(with: request) { data, _, error in
-                            do {
-                                guard let data = data else { throw error ?? ALTAppleAPIError(.unknown) }
-
+                        
+                        let verifyCodeTask = self.session.dataTask(with: request) { (data, response, error) in
+                            do
+                            {
+                                guard let data = data else { throw error ?? ALTAppleAPIError.unknown() }
+                                
                                 guard let responseDictionary = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
                                     throw URLError(.badServerResponse)
                                 }
@@ -230,10 +245,10 @@ private extension ALTAppleAPI {
                                 switch errorCode {
                                 case -21669: throw ALTAppleAPIError(.incorrectVerificationCode)
                                 default:
-                                    guard let errorDescription = responseDictionary["em"] as? String else { throw ALTAppleAPIError(.unknown) }
-
+                                    guard let errorDescription = responseDictionary["em"] as? String else { throw ALTAppleAPIError.unknown() }
+                                    
                                     let localizedDescription = errorDescription + " (\(errorCode))"
-                                    throw ALTAppleAPIError(.unknown, userInfo: [NSLocalizedDescriptionKey: localizedDescription])
+                                    throw ALTAppleAPIError.unknown(userInfo: [NSLocalizedDescriptionKey: localizedDescription])
                                 }
                             } catch {
                                 completionHandler(.failure(error))
@@ -331,20 +346,22 @@ private extension ALTAppleAPI {
 
         requestCodeTask.resume()
     }
-
-    func fetchAccount(session: ALTAppleAPISession, completionHandler: @escaping (Result<ALTAccount, Error>) -> Void) {
-        let url = URL(string: "viewDeveloper.action", relativeTo: baseURL)!
-
-        sendRequest(with: url, additionalParameters: nil, session: session, team: nil) { responseDictionary, requestError in
-            do {
-                guard let responseDictionary = responseDictionary else { throw requestError ?? ALTAppleAPIError(.unknown) }
-
+    
+    func fetchAccount(session: ALTAppleAPISession, completionHandler: @escaping (Result<ALTAccount, Error>) -> Void)
+    {
+        let url = URL(string: "viewDeveloper.action", relativeTo: self.baseURL)!
+        
+        self.sendRequest(with: url, additionalParameters: nil, session: session, team: nil) { (responseDictionary, requestError) in
+            do
+            {
+                guard let responseDictionary = responseDictionary else { throw requestError ?? ALTAppleAPIError.unknown() }
+                
                 guard let account = try self.processResponse(responseDictionary, parseHandler: { () -> Any? in
                     guard let dictionary = responseDictionary["developer"] as? [String: Any] else { return nil }
                     let account = ALTAccount(responseDictionary: dictionary)
                     return account
                 }, resultCodeHandler: nil) as? ALTAccount else {
-                    throw ALTAppleAPIError(.unknown)
+                    throw ALTAppleAPIError.unknown()
                 }
 
                 completionHandler(.success(account))
@@ -378,11 +395,12 @@ private extension ALTAppleAPI {
             request.httpMethod = "POST"
             request.httpBody = bodyData
             httpHeaders.forEach { request.addValue($0.value, forHTTPHeaderField: $0.key) }
-
-            let dataTask = session.dataTask(with: request) { data, _, error in
-                do {
-                    guard let data = data else { throw error ?? ALTAppleAPIError(.unknown) }
-
+            
+            let dataTask = self.session.dataTask(with: request) { (data, response, error) in
+                do
+                {
+                    guard let data = data else { throw error ?? ALTAppleAPIError.unknown() }
+                    
                     guard let responseDictionary = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
                           let dictionary = responseDictionary["Response"] as? [String: Any],
                           let status = dictionary["Status"] as? [String: Any]
@@ -395,10 +413,10 @@ private extension ALTAppleAPI {
                     case -20101, -22406: throw ALTAppleAPIError(.incorrectCredentials)
                     case -22421: throw ALTAppleAPIError(.invalidAnisetteData)
                     default:
-                        guard let errorDescription = status["em"] as? String else { throw ALTAppleAPIError(.unknown) }
-
+                        guard let errorDescription = status["em"] as? String else { throw ALTAppleAPIError.unknown() }
+                        
                         let localizedDescription = errorDescription + " (\(errorCode))"
-                        throw ALTAppleAPIError(.unknown, userInfo: [NSLocalizedDescriptionKey: localizedDescription])
+                        throw ALTAppleAPIError.unknown(userInfo: [NSLocalizedDescriptionKey: localizedDescription])
                     }
                 } catch {
                     completionHandler(.failure(error))
