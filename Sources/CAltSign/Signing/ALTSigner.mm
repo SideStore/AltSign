@@ -408,7 +408,7 @@ std::string CertificatesContent(ALTCertificate *altCertificate)
         }
         
         for (ALTApplication *appExtension in application.appExtensions)
-        {   
+        {
             NSError *error = prepareApp(appExtension);
             if (error != nil)
             {
