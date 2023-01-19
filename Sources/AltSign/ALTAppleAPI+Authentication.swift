@@ -408,8 +408,9 @@ private extension ALTAppleAPI {
 
                     let errorCode = status["ec"] as? Int ?? 0
                     guard errorCode != 0 else { return completionHandler(.success(dictionary)) }
-
-                    switch errorCode {
+                    
+                    switch errorCode
+                    {
                     case -20101, -22406: throw ALTAppleAPIError(.incorrectCredentials)
                     case -22421: throw ALTAppleAPIError(.invalidAnisetteData)
                     default:
