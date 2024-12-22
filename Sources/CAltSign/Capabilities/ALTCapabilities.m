@@ -15,6 +15,7 @@ ALTEntitlement const ALTEntitlementAppGroups = @"com.apple.security.application-
 ALTEntitlement const ALTEntitlementGetTaskAllow = @"get-task-allow";
 ALTEntitlement const ALTEntitlementTeamIdentifier = @"com.apple.developer.team-identifier";
 ALTEntitlement const ALTEntitlementInterAppAudio = @"inter-app-audio";
+ALTEntitlement const ALTEntitlementIncreasedDebuggingMemoryLimit = @"com.apple.developer.kernel.increased-debugging-memory-limit";
 
 // Features
 ALTFeature const ALTFeatureGameCenter = @"gameCenter";
