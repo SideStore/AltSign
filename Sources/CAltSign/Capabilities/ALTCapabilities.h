@@ -18,6 +18,7 @@ extern ALTEntitlement const ALTEntitlementAppGroups;
 extern ALTEntitlement const ALTEntitlementGetTaskAllow;
 extern ALTEntitlement const ALTEntitlementTeamIdentifier;
 extern ALTEntitlement const ALTEntitlementInterAppAudio;
+extern ALTEntitlement const ALTEntitlementIncreasedDebuggingMemoryLimit;
 
 // Features
 typedef NSString *ALTFeature NS_TYPED_EXTENSIBLE_ENUM;
