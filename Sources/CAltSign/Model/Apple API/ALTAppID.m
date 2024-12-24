@@ -24,8 +24,9 @@
         _bundleIdentifier = [bundleIdentifier copy];
         _expirationDate = [expirationDate copy];
         _features = [features copy];
+        _entitlements = @[];
     }
-    
+
     return self;
 }
 
@@ -34,22 +35,22 @@
     NSString *name = responseDictionary[@"name"];
     NSString *identifier = responseDictionary[@"appIdId"];
     NSString *bundleIdentifier = responseDictionary[@"identifier"];
-    
+
     if (name == nil || identifier == nil || bundleIdentifier == nil)
     {
         return nil;
     }
-    
+
     NSDictionary *allFeatures = responseDictionary[@"features"] ?: @{};
     NSArray *enabledFeatures = responseDictionary[@"enabledFeatures"] ?: @[];
-    
+
     NSMutableDictionary *features = [NSMutableDictionary dictionary];
     for (ALTFeature feature in enabledFeatures)
     {
         id value = allFeatures[feature];
         features[feature] = value;
     }
-    
+
     NSDate *expirationDate = responseDictionary[@"expirationDate"];
 
     self = [self initWithName:name identifier:identifier bundleIdentifier:bundleIdentifier expirationDate:expirationDate features:features];
@@ -70,7 +71,7 @@
     {
         return NO;
     }
-    
+
     BOOL isEqual = ([self.identifier isEqualToString:appID.identifier] && [self.bundleIdentifier isEqualToString:appID.bundleIdentifier]);
     return isEqual;
 }
