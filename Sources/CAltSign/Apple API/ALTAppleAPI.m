@@ -429,7 +429,7 @@ NS_ASSUME_NONNULL_END
     }
 
 
-    parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
+    // parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
     [parameters setObject:appID.entitlements forKey:@"entitlements"];
     [self sendRequestWithURL:URL additionalParameters:parameters
                      session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
