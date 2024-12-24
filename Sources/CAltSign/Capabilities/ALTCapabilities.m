@@ -17,6 +17,12 @@ ALTEntitlement const ALTEntitlementIncreasedMemoryLimit = @"com.apple.developer.
 ALTEntitlement const ALTEntitlementTeamIdentifier = @"com.apple.developer.team-identifier";
 ALTEntitlement const ALTEntitlementInterAppAudio = @"inter-app-audio";
 ALTEntitlement const ALTEntitlementIncreasedDebuggingMemoryLimit = @"com.apple.developer.kernel.increased-debugging-memory-limit";
+ALTEntitlement const ALTEntitlementExtendedVirtualAddressing = @"com.apple.developer.kernel.extended-virtual-addressing";
+
+// Capabilities
+ALTCapability const ALTCapabilityIncreasedMemoryLimit = @"INCREASED_MEMORY_LIMIT";
+ALTCapability const ALTCapabilityIncreasedDebuggingMemoryLimit = @"INCREASED_MEMORY_LIMIT_DEBUGGING";
+ALTCapability const ALTCapabilityExtendedVirtualAddressing = @"EXTENDED_VIRTUAL_ADDRESSING";
 
 // Features
 ALTFeature const ALTFeatureGameCenter = @"gameCenter";
@@ -33,7 +39,7 @@ _Nullable ALTEntitlement ALTEntitlementForFeature(ALTFeature feature)
     {
         return ALTEntitlementInterAppAudio;
     }
-    
+
     return nil;
 }
 
@@ -47,6 +53,6 @@ _Nullable ALTFeature ALTFeatureForEntitlement(ALTEntitlement entitlement)
     {
         return ALTFeatureInterAppAudio;
     }
-    
+
     return nil;
 }

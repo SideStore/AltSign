@@ -7,6 +7,7 @@
 //
 
 #import "ALTAppleAPI_Private.h"
+#include "ALTCapabilities.h"
 #import "ALTAppleAPISession.h"
 
 #import "ALTAnisetteData.h"
@@ -33,7 +34,7 @@ NS_ASSUME_NONNULL_END
     dispatch_once(&onceToken, ^{
         _appleAPI = [[self alloc] init];
     });
-    
+
     return _appleAPI;
 }
 
@@ -44,11 +45,11 @@ NS_ASSUME_NONNULL_END
     {
         _session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration ephemeralSessionConfiguration]];
         _dateFormatter = [[NSISO8601DateFormatter alloc] init];
-        
+
         _baseURL = [[NSURL URLWithString:[NSString stringWithFormat:@"https://developerservices2.apple.com/services/%@/", ALTProtocolVersion]] copy];
         _servicesBaseURL = [[NSURL URLWithString:@"https://developerservices2.apple.com/services/v1/"] copy];
     }
-    
+
     return self;
 }
 
@@ -57,14 +58,14 @@ NS_ASSUME_NONNULL_END
 - (void)fetchTeamsForAccount:(ALTAccount *)account session:(ALTAppleAPISession *)session completionHandler:(void (^)(NSArray<ALTTeam *> *teams, NSError *error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"listTeams.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:nil session:session team:nil completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         NSArray *teams = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSArray *array = responseDictionary[@"teams"];
@@ -72,7 +73,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             NSMutableArray *teams = [NSMutableArray array];
             for (NSDictionary *dictionary in array)
             {
@@ -81,12 +82,12 @@ NS_ASSUME_NONNULL_END
                 {
                     return nil;
                 }
-                
+
                 [teams addObject:team];
             }
             return teams;
         } resultCodeHandler:nil error:&error];
-        
+
         if (teams != nil && teams.count == 0)
         {
             completionHandler(nil, [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorNoTeams userInfo:nil]);
@@ -94,7 +95,7 @@ NS_ASSUME_NONNULL_END
         else
         {
             completionHandler(teams, error);
-        }        
+        }
     }];
 }
 
@@ -104,14 +105,14 @@ NS_ASSUME_NONNULL_END
           completionHandler:(void (^)(NSArray<ALTDevice *> *_Nullable devices, NSError *_Nullable error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/listDevices.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:nil session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         NSArray *devices = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSArray *array = responseDictionary[@"devices"];
@@ -119,7 +120,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             NSMutableArray *devices = [NSMutableArray array];
             for (NSDictionary *dictionary in array)
             {
@@ -128,18 +129,18 @@ NS_ASSUME_NONNULL_END
                 {
                     return nil;
                 }
-                
+
                 if ((types & device.type) != device.type)
                 {
                      // Device type doesn't match the ones we requested, so ignore it.
                     continue;
                 }
-                
+
                 [devices addObject:device];
             }
             return devices;
         } resultCodeHandler:nil error:&error];
-        
+
         completionHandler(devices, error);
     }];
 }
@@ -148,34 +149,34 @@ NS_ASSUME_NONNULL_END
              completionHandler:(void (^)(ALTDevice *_Nullable device, NSError *_Nullable error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/addDevice.action" relativeToURL:self.baseURL];
-    
+
     NSMutableDictionary *parameters = [@{
         @"deviceNumber": identifier,
         @"name": name,
     } mutableCopy];
-    
+
     switch (type)
     {
         case ALTDeviceTypeiPhone:
         case ALTDeviceTypeiPad:
             parameters[@"DTDK_Platform"] = @"ios";
             break;
-            
+
         case ALTDeviceTypeAppleTV:
             parameters[@"DTDK_Platform"] = @"tvos";
             parameters[@"subPlatform"] = @"tvOS";
             break;
-            
+
         default: break;
     }
-    
+
     [self sendRequestWithURL:URL additionalParameters:parameters session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         ALTDevice *device = [self processResponse:responseDictionary parseHandler:^id () {
             NSDictionary *dictionary = responseDictionary[@"device"];
@@ -183,7 +184,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             ALTDevice *device = [[ALTDevice alloc] initWithResponseDictionary:dictionary];
             return device;
         } resultCodeHandler:^NSError * _Nullable(NSInteger resultCode) {
@@ -198,11 +199,11 @@ NS_ASSUME_NONNULL_END
                     {
                         return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidDeviceID userInfo:nil];
                     }
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(device, error);
     }];
 }
@@ -213,14 +214,14 @@ NS_ASSUME_NONNULL_END
 {
     NSURL *URL = [NSURL URLWithString:@"certificates" relativeToURL:self.servicesBaseURL];
     NSURLRequest *request = [NSURLRequest requestWithURL:URL];
-    
+
     [self sendServicesRequest:request additionalParameters:@{@"filter[certificateType]": @"IOS_DEVELOPMENT"} session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         NSArray *certificates = [self processResponse:responseDictionary parseHandler:^id {
             NSArray *array = responseDictionary[@"data"];
@@ -228,7 +229,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             NSMutableArray *certificates = [NSMutableArray array];
             for (NSDictionary *dictionary in array)
             {
@@ -237,12 +238,12 @@ NS_ASSUME_NONNULL_END
                 {
                     return nil;
                 }
-                
+
                 [certificates addObject:certificate];
             }
             return certificates;
         } resultCodeHandler:nil error:&error];
-        
+
         completionHandler(certificates, error);
     }];
 }
@@ -256,10 +257,10 @@ NS_ASSUME_NONNULL_END
         completionHandler(nil, error);
         return;
     }
-    
+
     NSURL *URL = [NSURL URLWithString:@"ios/submitDevelopmentCSR.action" relativeToURL:self.baseURL];
     NSString *encodedCSR = [[NSString alloc] initWithData:request.data encoding:NSUTF8StringEncoding];
-    
+
     [self sendRequestWithURL:URL additionalParameters:@{@"csrContent": encodedCSR,
                                                         @"machineId": [[NSUUID UUID] UUIDString],
                                                         @"machineName": machineName}
@@ -269,7 +270,7 @@ NS_ASSUME_NONNULL_END
                              completionHandler(nil, requestError);
                              return;
                          }
-                         
+
                          NSError *error = nil;
                          ALTCertificate *certificate = [self processResponse:responseDictionary parseHandler:^id _Nullable{
                              NSDictionary *dictionary = responseDictionary[@"certRequest"];
@@ -277,7 +278,7 @@ NS_ASSUME_NONNULL_END
                              {
                                  return nil;
                              }
-                             
+
                              ALTCertificate *certificate = [[ALTCertificate alloc] initWithResponseDictionary:dictionary];
                              certificate.privateKey = request.privateKey;
                              return certificate;
@@ -286,11 +287,11 @@ NS_ASSUME_NONNULL_END
                              {
                                  case 3250:
                                      return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidCertificateRequest userInfo:nil];
-                                     
+
                                  default: return nil;
                              }
                          } error:&error];
-                         
+
                          completionHandler(certificate, error);
                      }];
 }
@@ -298,17 +299,17 @@ NS_ASSUME_NONNULL_END
 - (void)revokeCertificate:(ALTCertificate *)certificate forTeam:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(BOOL, NSError * _Nullable))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:[NSString stringWithFormat:@"certificates/%@", certificate.identifier] relativeToURL:self.servicesBaseURL];
-    
+
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL];
     request.HTTPMethod = @"DELETE";
-    
+
     [self sendServicesRequest:request additionalParameters:nil session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(NO, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         id result = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             return responseDictionary;
@@ -317,11 +318,11 @@ NS_ASSUME_NONNULL_END
             {
                 case 7252: return nil;
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorCertificateDoesNotExist userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(result != nil, error);
     }];
 }
@@ -331,14 +332,14 @@ NS_ASSUME_NONNULL_END
 - (void)fetchAppIDsForTeam:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(NSArray<ALTAppID *> * _Nullable, NSError * _Nullable))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/listAppIds.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:nil session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         NSArray *appIDs = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSArray *array = responseDictionary[@"appIds"];
@@ -346,7 +347,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             NSMutableArray *appIDs = [NSMutableArray array];
             for (NSDictionary *dictionary in array)
             {
@@ -355,12 +356,12 @@ NS_ASSUME_NONNULL_END
                 {
                     return nil;
                 }
-                
+
                 [appIDs addObject:appID];
             }
             return appIDs;
         } resultCodeHandler:nil error:&error];
-        
+
         completionHandler(appIDs, error);
     }];
 }
@@ -369,20 +370,20 @@ NS_ASSUME_NONNULL_END
        completionHandler:(void (^)(ALTAppID *_Nullable appID, NSError *_Nullable error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/addAppId.action" relativeToURL:self.baseURL];
-    
+
     NSMutableCharacterSet *allowedCharacters = [NSMutableCharacterSet alphanumericCharacterSet];
     [allowedCharacters formUnionWithCharacterSet:[NSCharacterSet whitespaceCharacterSet]];
-    
+
     NSString *sanitizedName = [name stringByFoldingWithOptions:NSDiacriticInsensitiveSearch locale:nil];
     sanitizedName = [[sanitizedName componentsSeparatedByCharactersInSet:[allowedCharacters invertedSet]] componentsJoinedByString:@""];
-    
+
     [self sendRequestWithURL:URL additionalParameters:@{@"identifier": bundleIdentifier, @"name": sanitizedName} session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         ALTAppID *appID = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSDictionary *dictionary = responseDictionary[@"appId"];
@@ -390,7 +391,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             ALTAppID *appID = [[ALTAppID alloc] initWithResponseDictionary:dictionary];
             return appID;
         } resultCodeHandler:^NSError * _Nullable(NSInteger resultCode) {
@@ -398,20 +399,20 @@ NS_ASSUME_NONNULL_END
             {
                 case 35:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidAppIDName userInfo:@{ALTAppNameErrorKey: sanitizedName}];
-                    
+
                 case 9120:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorMaximumAppIDLimitReached userInfo:nil];
-                    
+
                 case 9401:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorBundleIdentifierUnavailable userInfo:nil];
-                    
+
                 case 9412:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidBundleIdentifier userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(appID, error);
     }];
 }
@@ -419,14 +420,17 @@ NS_ASSUME_NONNULL_END
 - (void)updateAppID:(ALTAppID *)appID team:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(ALTAppID * _Nullable, NSError * _Nullable))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/updateAppId.action" relativeToURL:self.baseURL];
-    
+
     NSMutableDictionary *parameters = [@{@"appIdId": appID.identifier} mutableCopy];
-    
+
     for (ALTFeature feature in appID.features)
     {
         parameters[feature] = appID.features[feature];
     }
-    
+
+
+    parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
+    [parameters setObject:entitlements forKey:@"entitlements"];
     [self sendRequestWithURL:URL additionalParameters:parameters
                      session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
@@ -434,7 +438,7 @@ NS_ASSUME_NONNULL_END
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         ALTAppID *appID = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSDictionary *dictionary = responseDictionary[@"appId"];
@@ -442,7 +446,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             ALTAppID *appID = [[ALTAppID alloc] initWithResponseDictionary:dictionary];
             return appID;
         } resultCodeHandler:^NSError * _Nullable(NSInteger resultCode) {
@@ -450,17 +454,17 @@ NS_ASSUME_NONNULL_END
             {
                 case 35:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidAppIDName userInfo:nil];
-                    
+
                 case 9100:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorAppIDDoesNotExist userInfo:nil];
-                    
+
                 case 9412:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidBundleIdentifier userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(appID, error);
     }];
 }
@@ -468,14 +472,14 @@ NS_ASSUME_NONNULL_END
 - (void)deleteAppID:(ALTAppID *)appID forTeam:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(BOOL, NSError * _Nullable))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/deleteAppId.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:@{@"appIdId": appID.identifier} session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(NO, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         id value = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSNumber *result = responseDictionary[@"resultCode"];
@@ -485,11 +489,11 @@ NS_ASSUME_NONNULL_END
             {
                 case 9100:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorAppIDDoesNotExist userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(value != nil, error);
     }];
 }
@@ -499,14 +503,14 @@ NS_ASSUME_NONNULL_END
 - (void)fetchAppGroupsForTeam:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(NSArray<ALTAppGroup *> *_Nullable appIDs, NSError *_Nullable error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/listApplicationGroups.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:nil session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         NSArray *groups = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSArray *array = responseDictionary[@"applicationGroupList"];
@@ -514,7 +518,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             NSMutableArray *groups = [NSMutableArray array];
             for (NSDictionary *dictionary in array)
             {
@@ -523,12 +527,12 @@ NS_ASSUME_NONNULL_END
                 {
                     return nil;
                 }
-                
+
                 [groups addObject:group];
             }
             return groups;
         } resultCodeHandler:nil error:&error];
-        
+
         completionHandler(groups, error);
     }];
 }
@@ -536,14 +540,14 @@ NS_ASSUME_NONNULL_END
 - (void)addAppGroupWithName:(NSString *)name groupIdentifier:(NSString *)groupIdentifier team:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(ALTAppGroup * _Nullable, NSError * _Nullable))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/addApplicationGroup.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:@{@"identifier": groupIdentifier, @"name": name} session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         ALTAppGroup *group = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSDictionary *dictionary = responseDictionary[@"applicationGroup"];
@@ -551,7 +555,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             ALTAppGroup *group = [[ALTAppGroup alloc] initWithResponseDictionary:dictionary];
             return group;
         } resultCodeHandler:^NSError * _Nullable(NSInteger resultCode) {
@@ -560,11 +564,11 @@ NS_ASSUME_NONNULL_END
                 case 35:
                     // Doesn't distinguish between different validation failures via resultCode unfortunately.
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidAppGroup userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(group, error);
     }];
 }
@@ -573,13 +577,13 @@ NS_ASSUME_NONNULL_END
   completionHandler:(void (^)(BOOL success, NSError *_Nullable error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/assignApplicationGroupToAppId.action" relativeToURL:self.baseURL];
-    
+
     NSMutableArray *groupIDs = [NSMutableArray arrayWithCapacity:groups.count];
     for (ALTAppGroup *group in groups)
     {
         [groupIDs addObject:group.identifier];
     }
-    
+
     [self sendRequestWithURL:URL additionalParameters:@{@"appIdId": appID.identifier, @"applicationGroups": groupIDs}
                      session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
@@ -587,7 +591,7 @@ NS_ASSUME_NONNULL_END
             completionHandler(NO, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         id value = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSNumber *result = responseDictionary[@"resultCode"];
@@ -597,14 +601,14 @@ NS_ASSUME_NONNULL_END
             {
                 case 9115:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorAppIDDoesNotExist userInfo:nil];
-                    
+
                 case 35:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorAppGroupDoesNotExist userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(value != nil, error);
     }];
 }
@@ -615,33 +619,33 @@ NS_ASSUME_NONNULL_END
                        completionHandler:(void (^)(ALTProvisioningProfile *_Nullable provisioningProfile, NSError *_Nullable error))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/downloadTeamProvisioningProfile.action" relativeToURL:self.baseURL];
-    
+
     NSMutableDictionary *parameters = [@{
         @"appIdId": appID.identifier,
     } mutableCopy];
-    
+
     switch (deviceType)
     {
         case ALTDeviceTypeiPhone:
         case ALTDeviceTypeiPad:
             parameters[@"DTDK_Platform"] = @"ios";
             break;
-            
+
         case ALTDeviceTypeAppleTV:
             parameters[@"DTDK_Platform"] = @"tvos";
             parameters[@"subPlatform"] = @"tvOS";
             break;
-            
+
         default: break;
     }
-    
+
     [self sendRequestWithURL:URL additionalParameters:parameters session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
         {
             completionHandler(nil, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         ALTProvisioningProfile *provisioningProfile = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSDictionary *dictionary = responseDictionary[@"provisioningProfile"];
@@ -649,7 +653,7 @@ NS_ASSUME_NONNULL_END
             {
                 return nil;
             }
-            
+
             ALTProvisioningProfile *provisioningProfile = [[ALTProvisioningProfile alloc] initWithResponseDictionary:dictionary];
             return provisioningProfile;
         } resultCodeHandler:^NSError * _Nullable(NSInteger resultCode) {
@@ -657,11 +661,11 @@ NS_ASSUME_NONNULL_END
             {
                 case 8201:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorAppIDDoesNotExist userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(provisioningProfile, error);
     }];
 }
@@ -669,7 +673,7 @@ NS_ASSUME_NONNULL_END
 - (void)deleteProvisioningProfile:(ALTProvisioningProfile *)provisioningProfile forTeam:(ALTTeam *)team session:(ALTAppleAPISession *)session completionHandler:(void (^)(BOOL, NSError * _Nullable))completionHandler
 {
     NSURL *URL = [NSURL URLWithString:@"ios/deleteProvisioningProfile.action" relativeToURL:self.baseURL];
-    
+
     [self sendRequestWithURL:URL additionalParameters:@{@"provisioningProfileId": provisioningProfile.identifier,
                                                         @"teamId": team.identifier}
                      session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
@@ -678,7 +682,7 @@ NS_ASSUME_NONNULL_END
             completionHandler(NO, requestError);
             return;
         }
-        
+
         NSError *error = nil;
         id value = [self processResponse:responseDictionary parseHandler:^id _Nullable{
             NSNumber *result = responseDictionary[@"resultCode"];
@@ -688,14 +692,14 @@ NS_ASSUME_NONNULL_END
             {
                 case 35:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorInvalidProvisioningProfileIdentifier userInfo:nil];
-                    
+
                 case 8101:
                     return [NSError errorWithDomain:ALTAppleAPIErrorDomain code:ALTAppleAPIErrorProvisioningProfileDoesNotExist userInfo:nil];
-                    
+
                 default: return nil;
             }
         } error:&error];
-        
+
         completionHandler(value != nil, error);
     }];
 }
@@ -709,16 +713,16 @@ NS_ASSUME_NONNULL_END
                                                                  @"protocolVersion": ALTProtocolVersion,
                                                                  @"requestId": [[[NSUUID UUID] UUIDString] uppercaseString],
                                                                  } mutableCopy];
-    
+
     if (team != nil)
     {
         parameters[@"teamId"] = team.identifier;
     }
-    
+
     [additionalParameters enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
         parameters[key] = value;
     }];
-    
+
     NSError *serializationError = nil;
     NSData *bodyData = [NSPropertyListSerialization dataWithPropertyList:parameters format:NSPropertyListXMLFormat_v1_0 options:0 error:&serializationError];
     if (bodyData == nil)
@@ -727,13 +731,13 @@ NS_ASSUME_NONNULL_END
         completionHandler(nil, error);
         return;
     }
-    
+
     NSURL *URL = [NSURL URLWithString:[NSString stringWithFormat:@"%@?clientId=%@", requestURL.absoluteString, ALTClientID]];
-    
+
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL];
     request.HTTPMethod = @"POST";
     request.HTTPBody = bodyData;
-    
+
     NSDictionary<NSString *, NSString *> *httpHeaders = @{
         @"Content-Type": @"text/x-xml-plist",
         @"User-Agent": @"Xcode",
@@ -754,48 +758,48 @@ NS_ASSUME_NONNULL_END
         @"X-Apple-I-Locale": session.anisetteData.locale.localeIdentifier,
         @"X-Apple-I-TimeZone": session.anisetteData.timeZone.abbreviation
     };
-    
+
     [httpHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
         [request setValue:value forHTTPHeaderField:key];
     }];
-    
+
     NSURLSessionDataTask *dataTask = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (data == nil)
         {
             completionHandler(nil, error);
             return;
         }
-        
+
         NSError *parseError = nil;
         NSDictionary *responseDictionary = [NSPropertyListSerialization propertyListWithData:data options:0 format:nil error:&parseError];
-        
+
         if (responseDictionary == nil)
         {
             NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorBadServerResponse userInfo:@{NSUnderlyingErrorKey: parseError}];
             completionHandler(nil, error);
             return;
         }
-        
+
         completionHandler(responseDictionary, nil);
     }];
-    
+
     [dataTask resume];
 }
 
 - (void)sendServicesRequest:(NSURLRequest *)originalRequest additionalParameters:(nullable NSDictionary *)additionalParameters session:(ALTAppleAPISession *)session team:(ALTTeam *)team completionHandler:(void (^)(NSDictionary *responseDictionary, NSError *error))completionHandler
 {
     NSMutableURLRequest *request = [originalRequest mutableCopy];
-    
+
     NSMutableArray<NSURLQueryItem *> *queryItems = [@[[NSURLQueryItem queryItemWithName:@"teamId" value:team.identifier]] mutableCopy];
     [additionalParameters enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
         [queryItems addObject:[NSURLQueryItem queryItemWithName:key value:value]];
     }];
-    
+
     NSURLComponents *components = [[NSURLComponents alloc] init];
     components.queryItems = queryItems;
-    
+
     NSString *queryString = components.query ?: @"";
-    
+
     NSError *serializationError = nil;
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:@{@"urlEncodedQueryParams": queryString} options:0 error:&serializationError];
     if (bodyData == nil)
@@ -804,12 +808,12 @@ NS_ASSUME_NONNULL_END
         completionHandler(nil, error);
         return;
     }
-        
+
     request.HTTPBody = bodyData;
-    
+
     NSString *HTTPMethodOverride = request.HTTPMethod;
     request.HTTPMethod = @"POST";
-    
+
     NSDictionary<NSString *, NSString *> *httpHeaders = @{
         @"Content-Type": @"application/vnd.api+json",
         @"User-Agent": @"Xcode",
@@ -830,20 +834,20 @@ NS_ASSUME_NONNULL_END
         @"X-Apple-Locale": session.anisetteData.locale.localeIdentifier,
         @"X-Apple-I-TimeZone": session.anisetteData.timeZone.abbreviation
     };
-    
+
     [httpHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
         [request setValue:value forHTTPHeaderField:key];
     }];
-    
+
     NSURLSessionDataTask *dataTask = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (data == nil)
         {
             completionHandler(nil, error);
             return;
         }
-        
+
         NSDictionary *responseDictionary = nil;
-        
+
         if (data.length == 0)
         {
             responseDictionary = @{};
@@ -852,18 +856,18 @@ NS_ASSUME_NONNULL_END
         {
             NSError *parseError = nil;
             responseDictionary = [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];
-            
+
             if (responseDictionary == nil)
             {
                 NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorBadServerResponse userInfo:@{NSUnderlyingErrorKey: parseError}];
                 completionHandler(nil, error);
                 return;
             }
-        }        
-        
+        }
+
         completionHandler(responseDictionary, nil);
     }];
-    
+
     [dataTask resume];
 }
 
@@ -880,14 +884,14 @@ NS_ASSUME_NONNULL_END
             return value;
         }
     }
-    
+
     id result = responseDictionary[@"resultCode"];
     if (result == nil)
     {
         *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorBadServerResponse userInfo:nil];
         return nil;
     }
-    
+
     NSInteger resultCode = [result integerValue]; // Works wether result is NSNumber or NSString.
     if (resultCode == 0)
     {
@@ -900,19 +904,19 @@ NS_ASSUME_NONNULL_END
         {
             tempError = resultCodeHandler(resultCode);
         }
-        
+
         if (tempError == nil)
         {
             NSString *errorDescription = [responseDictionary objectForKey:@"userString"] ?: [responseDictionary objectForKey:@"resultString"];
             NSString *localizedDescription = [NSString stringWithFormat:@"%@ (%@)", errorDescription, @(resultCode)];
-            
+
             tempError = [NSError errorWithDomain:ALTUnderlyingAppleAPIErrorDomain code:resultCode userInfo:@{
                 NSLocalizedDescriptionKey: localizedDescription,
             }];
         }
-        
+
         *error = tempError;
-        
+
         return nil;
     }
 }

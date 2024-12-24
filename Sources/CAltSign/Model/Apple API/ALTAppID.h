@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (copy, nonatomic) NSDictionary<ALTFeature, id> *features;
 @property (copy, nonatomic) NSDictionary<ALTEntitlement, id> *entitlements;
+@property (copy, nonatomic) NSDictionary<ALTCapability, id> *capabilities;
 
 - (instancetype)init NS_UNAVAILABLE;
 - (instancetype)initWithName:(NSString *)name identifier:(NSString *)identifier bundleIdentifier:(NSString *)bundleIdentifier expirationDate:(nullable NSDate *)expirationDate features:(NSDictionary<ALTFeature, id> *)features NS_DESIGNATED_INITIALIZER;

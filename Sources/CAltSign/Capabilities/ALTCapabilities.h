@@ -20,6 +20,13 @@ extern ALTEntitlement const ALTEntitlementIncreasedMemoryLimit;
 extern ALTEntitlement const ALTEntitlementTeamIdentifier;
 extern ALTEntitlement const ALTEntitlementInterAppAudio;
 extern ALTEntitlement const ALTEntitlementIncreasedDebuggingMemoryLimit;
+extern ALTEntitlement const ALTEntitlementExtendedVirtualAddressing;
+
+// Capabilities
+typedef NSString *ALTCapability NS_TYPED_EXTENSIBLE_ENUM;
+extern ALTCapability const ALTCapabilityIncreasedMemoryLimit;
+extern ALTCapability const ALTCapabilityIncreasedDebuggingMemoryLimit;
+extern ALTCapability const ALTCapabilityExtendedVirtualAddressing;
 
 // Features
 typedef NSString *ALTFeature NS_TYPED_EXTENSIBLE_ENUM;
