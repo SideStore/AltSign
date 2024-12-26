@@ -43,6 +43,38 @@ _Nullable ALTEntitlement ALTEntitlementForFeature(ALTFeature feature)
     return nil;
 }
 
+bool ALTFreeDeveloperCanUseEntitlement(ALTEntitlement entitlement) {
+    if ([entitlement isEqualToString:ALTEntitlementAppGroups])
+    {
+        return true;
+    }
+    else if ([entitlement isEqualToString:ALTEntitlementInterAppAudio])
+    {
+        return true;
+    }
+    else if ([entitlement isEqualToString:ALTEntitlementGetTaskAllow])
+    {
+        return true;
+    }
+    else if ([entitlement isEqualToString:ALTEntitlementIncreasedMemoryLimit])
+    {
+        return true;
+    }
+    else if ([entitlement isEqualToString:ALTEntitlementTeamIdentifier])
+    {
+        return true;
+    }
+    else if ([entitlement isEqualToString:ALTEntitlementKeychainAccessGroups])
+    {
+        return true;
+    }
+    else if ([entitlement isEqualToString:ALTEntitlementApplicationIdentifier])
+    {
+        return true;
+    }
+    return true;
+}
+
 _Nullable ALTFeature ALTFeatureForEntitlement(ALTEntitlement entitlement)
 {
     if ([entitlement isEqualToString:ALTEntitlementAppGroups])
