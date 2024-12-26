@@ -428,6 +428,16 @@ NS_ASSUME_NONNULL_END
         parameters[feature] = appID.features[feature];
     }
 
+    if (team.type == ALTTeamTypeFree)
+        for (int i = 0; i < appID.entitlements.count; i++)
+        {
+            ALTEntitlement *entitlement = appID.entitlements[i];
+            if (!ALTFreeDeveloperCanUseEntitlement(entitlement))
+            {
+                // remove entitlement from appID.entitlements
+                [appID.entitlements removeObjectAtIndex:i];
+            }
+        }
 
     // parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
     [parameters setObject:appID.entitlements forKey:@"entitlements"];
