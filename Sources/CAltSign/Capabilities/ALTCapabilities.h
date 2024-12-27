@@ -36,5 +36,6 @@ extern ALTFeature const ALTFeatureInterAppAudio;
 
 _Nullable ALTEntitlement ALTEntitlementForFeature(ALTFeature feature) NS_SWIFT_NAME(ALTEntitlement.init(feature:));
 _Nullable ALTFeature ALTFeatureForEntitlement(ALTEntitlement entitlement) NS_SWIFT_NAME(ALTFeature.init(entitlement:));
+bool ALTFreeDeveloperCanUseEntitlement(ALTEntitlement entitlement);
 
 NS_ASSUME_NONNULL_END
