@@ -427,20 +427,21 @@ NS_ASSUME_NONNULL_END
     {
         parameters[feature] = appID.features[feature];
     }
+  
+    NSMutableDictionary *entitlementss = [appID.entitlements mutableCopy];
 
-    if (team.type == ALTTeamTypeFree)
-        for (int i = 0; i < appID.entitlements.count; i++)
+    if (team.type == ALTTeamTypeFree) {
+        for (ALTEntitlement entitlement in appID.entitlements)
         {
-            ALTEntitlement *entitlement = appID.entitlements[i];
             if (!ALTFreeDeveloperCanUseEntitlement(entitlement))
             {
-                // remove entitlement from appID.entitlements
-                [appID.entitlements removeObjectAtIndex:i];
+                [entitlementss removeObjectForKey:entitlement];
             }
         }
+    }
 
     // parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
-    [parameters setObject:appID.entitlements forKey:@"entitlements"];
+    [parameters setObject:entitlementss forKey:@"entitlements"];
     [self sendRequestWithURL:URL additionalParameters:parameters
                      session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
         if (responseDictionary == nil)
