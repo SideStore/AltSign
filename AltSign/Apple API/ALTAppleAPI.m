@@ -436,6 +436,7 @@ NS_ASSUME_NONNULL_END
     }
 
     NSMutableDictionary *entitlementss = [appID.entitlements mutableCopy];
+    parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
 
     if (team.type == ALTTeamTypeFree) {
         for (ALTEntitlement entitlement in appID.entitlements)
@@ -445,9 +446,9 @@ NS_ASSUME_NONNULL_END
                 [entitlementss removeObjectForKey:entitlement];
             }
         }
+        parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit];
     }
 
-    // parameters[@"capabilities"] = @[ALTCapabilityIncreasedMemoryLimit, ALTCapabilityIncreasedDebuggingMemoryLimit, ALTCapabilityExtendedVirtualAddressing];
     [parameters setObject:entitlementss forKey:@"entitlements"];
     [self sendRequestWithURL:URL additionalParameters:parameters
                      session:session team:team completionHandler:^(NSDictionary *responseDictionary, NSError *requestError) {
