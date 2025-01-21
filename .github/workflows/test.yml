@@ -33,21 +33,21 @@ jobs:
         --report html --output build/reports/html
 
     - name: Upload Test Results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: Test Results
         path: build/reports
 
     - name: Upload Coverage Results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: Coverage Results
         path: build/coverage
 
     - name: Upload Logs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: Logs
