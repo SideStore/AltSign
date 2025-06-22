@@ -324,8 +324,11 @@ struct ALTProgress: public ldid::Progress
                     return profile;
                 }
             }
-
-            return profiles[0];
+            if(profiles.count > 0) {
+                return profiles[0];
+            } else {
+                return nil;
+            }
         };
 
         NSError * (^prepareApp)(ALTApplication *) = ^NSError *(ALTApplication *app) {
