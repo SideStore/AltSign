@@ -454,7 +454,7 @@ private extension ALTAppleAPI {
             "X-Mme-Device-Id": anisetteData.deviceUniqueIdentifier,
             "X-MMe-Client-Info": anisetteData.deviceDescription,
             "X-Apple-I-Client-Time": dateFormatter.string(from: anisetteData.date),
-            "X-Apple-Locale": anisetteData.locale.identifier,
+            "X-Apple-Locale": String(anisetteData.locale.identifier.prefix { $0 != "@" }),
             "X-Apple-I-TimeZone": anisetteData.timeZone.abbreviation() ?? "PST"
         ]
 
