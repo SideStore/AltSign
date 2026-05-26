@@ -220,6 +220,11 @@ char ALTDirectoryDeliminator = '/';
             } while (result > 0);
             
             short permissions = (info.external_fa >> 16) & 0x01FF;
+            if (permissions == 0) {
+                // No Unix mode bits set -- archive was likely created on Windows.
+                // Use a readable default so signing can proceed. (Fixes issue #447.)
+                permissions = 0644;
+            }
             if (![self setAttributes:@{NSFilePosixPermissions: @(permissions)} ofItemAtPath:fileURL.path error:error])
             {
                 finish();
