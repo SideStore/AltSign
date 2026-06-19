@@ -219,9 +219,16 @@ private extension ALTAppleAPI {
 
         let request = makeTwoFactorCodeRequest(url: requestURL, dsid: dsid, idmsToken: idmsToken, anisetteData: anisetteData)
 
-        let requestCodeTask = session.dataTask(with: request) { data, _, error in
+        let requestCodeTask = session.dataTask(with: request) { _, response, error in
             do {
                 guard error == nil else { throw error! }
+				guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+					throw NSError(
+						domain: ALTUnderlyingAppleAPIErrorDomain,
+						code: NSURLErrorBadServerResponse,
+						userInfo: [NSLocalizedDescriptionKey: "Unable to send a verification code to your trusted devices."]
+					)
+				}
 
                 func responseHandler(verificationCode: String?) {
                     do {
