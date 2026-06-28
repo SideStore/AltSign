@@ -164,8 +164,8 @@ extension ALTAppleAPI {
             string: "\(requestURL.absoluteString)?clientId=\(ALTClientID)"
         )!
 
-        debugLog("[AltSign] sendRequest to: \(url.absoluteString)")
-        debugLog("[AltSign] sendRequest parameters: \(parameters)")
+        verboseLog("[AltSign] sendRequest to: \(url.absoluteString)")
+        verboseLog("[AltSign] sendRequest parameters: \(parameters)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -255,8 +255,8 @@ extension ALTAppleAPI {
         comps.queryItems = items
         let query = comps.query ?? ""
 
-        debugLog("[AltSign] sendServicesRequest to: \(request.url?.absoluteString ?? "unknown URL")")
-        debugLog("[AltSign] sendServicesRequest parameters: \(additionalParameters ?? [:])")
+        verboseLog("[AltSign] sendServicesRequest to: \(request.url?.absoluteString ?? "unknown URL")")
+        verboseLog("[AltSign] sendServicesRequest parameters: \(additionalParameters ?? [:])")
 
         let bodyData: Data
         do {
