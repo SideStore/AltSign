@@ -86,10 +86,10 @@ private extension ALTSigner {
         var entitlementsByURL: [URL: String] = [:]
 
         func prepare(_ app: ALTApplication) throws {
-            debugLog("[AltSign] ALTSigner.prepare started for: \(app.bundleIdentifier)")
+            verboseLog("[AltSign] ALTSigner.prepare started for: \(app.bundleIdentifier)")
 
             guard let profile = profile(for: app) else {
-                debugLog("[AltSign] ALTSigner.prepare error: Missing provisioning profile for \(app.bundleIdentifier)")
+                verboseLog("[AltSign] ALTSigner.prepare error: Missing provisioning profile for \(app.bundleIdentifier)")
                 throw NSError(
                     domain: AltSignErrorDomain,
                     code: ALTError.missingProvisioningProfile.rawValue
@@ -99,11 +99,11 @@ private extension ALTSigner {
             let profileURL =
                 app.fileURL.appendingPathComponent("embedded.mobileprovision")
 
-            debugLog("[AltSign] Writing mobileprovision to: \(profileURL.path)")
+            verboseLog("[AltSign] Writing mobileprovision to: \(profileURL.path)")
             try profile.data.write(to: profileURL)
 
             var filtered = profile.entitlements
-            debugLog("[AltSign] Original profile entitlements: \(filtered)")
+            verboseLog("[AltSign] Original profile entitlements: \(filtered)")
 
             for (key, _) in profile.entitlements {
                 if app.entitlements[key] == nil {
@@ -118,23 +118,24 @@ private extension ALTSigner {
                 }
             }
 
-            debugLog("[AltSign] Filtered entitlements for signing: \(filtered)")
+            verboseLog("[AltSign] Filtered entitlements for signing: \(filtered)")
 
+            let stringKeyed = Dictionary(uniqueKeysWithValues: filtered.map { ($0.key.rawValue, $0.value) })
             let plist = try PropertyListSerialization.data(
-                fromPropertyList: filtered,
+                fromPropertyList: stringKeyed,
                 format: .xml,
                 options: 0
             )
 
             guard let string = String(data: plist, encoding: .utf8) else {
-                debugLog("[AltSign] ALTSigner.prepare error: Failed to convert plist data to XML string")
+                verboseLog("[AltSign] ALTSigner.prepare error: Failed to convert plist data to XML string")
                 throw NSError(
                     domain: AltSignErrorDomain,
                     code: ALTError.unknown.rawValue
                 )
             }
 
-            debugLog("[AltSign] Prepared Entitlements XML:\n\(string)")
+            verboseLog("[AltSign] Prepared Entitlements XML:\n\(string)")
 
             entitlementsByURL[
                 app.fileURL.resolvingSymlinksInPath()
@@ -144,7 +145,7 @@ private extension ALTSigner {
         try prepare(application)
 
         for ext in application.appExtensions {
-            debugLog("[AltSign] Found app extension: \(ext.bundleIdentifier) at \(ext.fileURL.path)")
+            verboseLog("[AltSign] Found app extension: \(ext.bundleIdentifier) at \(ext.fileURL.path)")
             try prepare(ext)
         }
 
@@ -158,7 +159,7 @@ private extension ALTSigner {
             )
         }
         
-        debugLog("[AltSign] Invoking LdidBridge.sign for appPath: \(application.fileURL.path)")
+        verboseLog("[AltSign] Invoking LdidBridge.sign for appPath: \(application.fileURL.path)")
         try LdidBridge.sign(
             appPath: application.fileURL.path,
             keyData: keyData,
