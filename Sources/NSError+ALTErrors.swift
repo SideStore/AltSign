@@ -50,6 +50,7 @@ public enum ALTAppleAPIError: Int, Error {
     case incorrectVerificationCode
     case authenticationHandshakeFailed
     case invalidAnisetteData
+    case tooManyCertificates
 }
 
 extension ALTAppleAPIError {
@@ -211,6 +212,9 @@ extension NSError {
 
         case .invalidAnisetteData:
             return NSLocalizedString("The provided anisette data is invalid.", comment: "")
+        
+        case .tooManyCertificates:
+            return NSLocalizedString("The maximum number of certificates for this account has been reached.", comment: "")
         }
     }
 

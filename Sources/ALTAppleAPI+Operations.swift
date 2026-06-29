@@ -183,6 +183,9 @@ public extension ALTAppleAPI {
                 if resultCode == 3250 {
                     return NSError(domain: ALTAppleAPIErrorDomain, code: ALTAppleAPIError.invalidCertificateRequest.rawValue, userInfo: nil)
                 }
+                if resultCode == 7460 {
+                    return NSError(domain: ALTAppleAPIErrorDomain, code: ALTAppleAPIError.tooManyCertificates.rawValue, userInfo: nil)
+                }
                 return nil
             }, error: &error) as? ALTCertificate
             
