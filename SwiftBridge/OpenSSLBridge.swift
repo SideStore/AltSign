@@ -185,7 +185,7 @@ public enum OpenSSLBridge {
         guard ok != 0,
               let namePtr,
               let serialPtr else {
-            debugLog("[AltSign] OpenSSLBridge.parseCertificate failed: native x509 parsing returned error or null pointers")
+            verboseLog("[AltSign] OpenSSLBridge.parseCertificate failed: native x509 parsing returned error or null pointers")
             return nil
         }
 
