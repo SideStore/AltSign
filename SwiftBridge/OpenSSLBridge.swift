@@ -111,7 +111,7 @@ public enum OpenSSLBridge {
     public static func extractPKCS12(
         _ data: Data,
         password: String?
-    ) -> (cert: Data, key: Data)? {
+    ) throws -> (cert: Data, key: Data) {
 
         verboseLog("[AltSign] OpenSSLBridge.extractPKCS12 started. Data size: \(data.count) bytes, hasPassword: \(password != nil)")
 
@@ -133,11 +133,22 @@ public enum OpenSSLBridge {
             )
         }
 
-        guard ok != 0,
+        guard ok == 1,
               let certPtr,
               let keyPtr else {
-            debugLog("[AltSign] OpenSSLBridge.extractPKCS12 failed: native pkcs12 extraction returned error or null pointers")
-            return nil
+            if let certPtr { native_bridge_free(certPtr) }
+            if let keyPtr { native_bridge_free(keyPtr) }
+            
+            debugLog("[AltSign] OpenSSLBridge.extractPKCS12 failed: native pkcs12 extraction returned error or null pointers. Data size: \(data.count) bytes, password: \(String(describing: password))")
+            
+            switch ok {
+            case -1:
+                throw ALTCertificateError.invalidFormat
+            case -2:
+                throw ALTCertificateError.decryptionFailed
+            default:
+                throw ALTCertificateError.extractionFailed
+            }
         }
 
         let cert = Data(bytes: certPtr, count: Int(certLen))

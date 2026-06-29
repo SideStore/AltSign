@@ -85,16 +85,46 @@ public final class ALTCertificate: NSObject {
 
     // MARK: P12 Init
 
-    public convenience init?(
+    public convenience init(
         p12Data: Data,
         password: String?
-    ) {
+    ) throws {
+        guard p12Data.isPKCS12 else {
+            throw ALTCertificateError.invalidFormat
+        }
 
-        guard let result =
-            OpenSSLBridge.extractPKCS12(p12Data, password: password)
-        else { return nil }
+        let result = try OpenSSLBridge.extractPKCS12(p12Data, password: password)
 
-        self.init(data: result.cert)
+        var pemData = result.cert
+
+        if let prefix = String(
+            data: pemData.prefix(Self.pemPrefix.count),
+            encoding: .utf8
+        ),
+        prefix != Self.pemPrefix {
+            let base64 = pemData.base64EncodedString(
+                options: .lineLength64Characters
+            )
+            let content = "\(Self.pemPrefix)\n\(base64)\n\(Self.pemSuffix)"
+            pemData = content.data(using: .utf8)!
+        }
+
+        guard let parsed = OpenSSLBridge.parseCertificate(pemData) else {
+            throw ALTCertificateError.extractionFailed
+        }
+
+        var serial = parsed.serial
+        if let idx = serial.firstIndex(where: { $0 != "0" }) {
+            serial = String(serial[idx...])
+        } else {
+            throw ALTCertificateError.extractionFailed
+        }
+
+        self.init(
+            name: parsed.name,
+            serialNumber: serial,
+            data: pemData
+        )
         self.privateKey = result.key
     }
 
@@ -178,5 +208,42 @@ public final class ALTCertificate: NSObject {
 
     public func encryptedP12Data(withPassword password: String) -> Data? {
         return self.encryptedP12Data(password: password)
+    }
+}
+
+public extension Data {
+    public var isPKCS12: Bool {
+        guard self.count > 6 else { return false }
+        guard self[0] == 0x30 else { return false } // Must be SEQUENCE
+        
+        // Parse ASN.1 length
+        var offset = 1
+        let lengthByte = self[offset]
+        if lengthByte & 0x80 == 0 {
+            // Short form length (1 byte)
+            offset += 1
+        } else {
+            // Long form length
+            let numLengthBytes = Int(lengthByte & 0x7F)
+            guard self.count > 1 + numLengthBytes else { return false }
+            offset += 1 + numLengthBytes
+        }
+        
+        guard self.count > offset else { return false }
+        return self[offset] == 0x02 // First element of PFX SEQUENCE must be INTEGER (version)
+    }
+}
+
+public enum ALTCertificateError: LocalizedError {
+    case invalidFormat      // Wrong ASN.1 tag sequence (e.g. raw certificate passed)
+    case decryptionFailed   // Wrong password (MAC verify/generation failure)
+    case extractionFailed   // General parsing or null pointer failure
+    
+    public var errorDescription: String? {
+        switch self {
+        case .invalidFormat: return "The data is not in PKCS12 format."
+        case .decryptionFailed: return "Decryption failed. Please check if the password is correct."
+        case .extractionFailed: return "Failed to extract certificate or private key from PKCS12 archive."
+        }
     }
 }

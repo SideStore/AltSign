@@ -9,6 +9,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <openssl/err.h>
 
 static uint8_t *nb_copy_bio(BIO *bio, int32_t *len)
 {
@@ -66,7 +67,10 @@ int native_bridge_pkcs12_extract(
     BIO *bio = BIO_new_mem_buf(p12_bytes, p12_len);
     PKCS12 *p12 = d2i_PKCS12_bio(bio, nullptr);
     BIO_free(bio);
-    if (!p12) return 0;
+    if (!p12)
+    {
+        return -1;
+    }
 
     EVP_PKEY *key = nullptr;
     X509 *cert = nullptr;
@@ -95,8 +99,15 @@ int native_bridge_pkcs12_extract(
 
     if (!parsed)
     {
+        unsigned long err = ERR_get_error();
+        int reason = ERR_GET_REASON(err);
         PKCS12_free(p12);
-        return 0;
+        
+        if (reason == PKCS12_R_MAC_VERIFY_FAILURE || reason == PKCS12_R_MAC_GENERATION_ERROR)
+        {
+            return -2;
+        }
+        return -3;
     }
 
     BIO *certBIO = BIO_new(BIO_s_mem());
