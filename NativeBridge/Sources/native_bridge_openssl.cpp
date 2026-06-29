@@ -71,7 +71,17 @@ int native_bridge_pkcs12_extract(
     EVP_PKEY *key = nullptr;
     X509 *cert = nullptr;
 
-    if (!PKCS12_parse(p12, password, &key, &cert, nullptr))
+    bool parsed = PKCS12_parse(p12, password, &key, &cert, nullptr);
+    if (!parsed && password == nullptr)
+    {
+        parsed = PKCS12_parse(p12, "", &key, &cert, nullptr);
+    }
+    if (!parsed && password != nullptr && strcmp(password, "") != 0)
+    {
+        parsed = PKCS12_parse(p12, nullptr, &key, &cert, nullptr);
+    }
+
+    if (!parsed)
     {
         PKCS12_free(p12);
         return 0;
