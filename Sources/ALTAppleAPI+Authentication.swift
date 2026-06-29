@@ -42,11 +42,11 @@ public extension ALTAppleAPI
 
             let context = GSAContext(username: sanitizedAppleID, password: password)
             guard let publicKey = context.start() else {
-                debugLog("[AltSign] Failed to start GSAContext / generate public key A")
+                verboseLog("[AltSign] Failed to start GSAContext / generate public key A")
                 throw ALTAppleAPIError.authenticationHandshakeFailed
             }
 
-            debugLog("[AltSign] GSAContext started. Generated public key A (A2k): \(publicKey.hexEncodedString())")
+            verboseLog("[AltSign] GSAContext started. Generated public key A (A2k): \(publicKey.hexEncodedString())")
 
             let parameters = [
                 "A2k": publicKey,
@@ -66,7 +66,7 @@ public extension ALTAppleAPI
                           let iterations = responseDictionary["i"] as? Int,
                           let serverPublicKey = responseDictionary["B"] as? Data
                     else {
-                        print("[AltSign] Failed to parse authentication init response dictionary: \(responseDictionary)")
+                        verboseLog("[AltSign] Failed to parse authentication init response dictionary: \(responseDictionary)")
                         throw URLError(.badServerResponse)
                     }
 
@@ -99,7 +99,7 @@ public extension ALTAppleAPI
                         "u": sanitizedAppleID
                     ] as [String: Any]
 
-                    verboseLog("[AltSign] Sending authentication 'complete' request...")
+                    debugLog("[AltSign] Sending authentication 'complete' request...")
                     self.sendAuthenticationRequest(parameters: parameters, anisetteData: anisetteData) { result in
                         do {
                             let responseDictionary = try result.get()
@@ -108,7 +108,7 @@ public extension ALTAppleAPI
                                   let serverDictionary = responseDictionary["spd"] as? Data,
                                   let statusDictionary = responseDictionary["Status"] as? [String: Any]
                             else {
-                                print("[AltSign] Failed to parse complete response dictionary: \(responseDictionary)")
+                                verboseLog("[AltSign] Failed to parse complete response dictionary: \(responseDictionary)")
                                 throw URLError(.badServerResponse)
                             }
 
@@ -431,7 +431,7 @@ private extension ALTAppleAPI {
                 "Request": requestParameters
             ]
 
-            debugLog("[AltSign] sendAuthenticationRequest payload: \(parameters)")
+            verboseLog("[AltSign] sendAuthenticationRequest payload: \(parameters)")
 
             let httpHeaders = [
                 "Content-Type": "text/x-xml-plist",
@@ -489,7 +489,7 @@ private extension ALTAppleAPI {
 
             dataTask.resume()
         } catch {
-            debugLog("[AltSign] sendAuthenticationRequest failed before sending: \(error)")
+            verboseLog("[AltSign] sendAuthenticationRequest failed before sending: \(error)")
             completionHandler(.failure(error))
         }
     }

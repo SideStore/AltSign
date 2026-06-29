@@ -38,7 +38,9 @@ int native_bridge_ccsrp_client_process_challenge(
     const void *B,
     size_t B_len,
     const char *username,
-    const char *password
+    const void *password,
+    size_t password_len,
+    void *M_bytes
 );
 
 int native_bridge_ccsrp_client_verify_session(

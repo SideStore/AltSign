@@ -89,7 +89,11 @@ extension GSAContext
         return false
         #else
         guard !serverVerificationMessage.isEmpty else { return false }
-        return srp?.verifyServerProof(serverVerificationMessage) ?? false
+        let isValid = srp?.verifyServerProof(serverVerificationMessage) ?? false
+        if isValid {
+            self.sessionKey = srp?.sessionKey()
+        }
+        return isValid
         #endif
     }
 
@@ -184,7 +188,7 @@ private extension GSAContext
 
         return srp?.processChallenge(
             username: username,
-            password: password,
+            password: x,
             salt: salt,
             serverPublicKey: B
         )

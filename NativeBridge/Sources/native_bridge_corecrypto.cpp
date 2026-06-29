@@ -53,6 +53,7 @@ native_bridge_ccsrp_ctx native_bridge_ccsrp_client_new(void)
     if (!ctx) return nullptr;
 
     ccsrp_ctx_init(ctx, di, gp);
+    ccsrp_client_set_noUsernameInX(ctx, true);
     return ctx;
 }
 
@@ -88,20 +89,22 @@ int native_bridge_ccsrp_client_process_challenge(
     const void *salt,
     size_t salt_len,
     const void *B,
-    size_t,
+    size_t B_len,
     const char *username,
-    const char *password
+    const void *password,
+    size_t password_len,
+    void *M_bytes
 )
 {
     return ccsrp_client_process_challenge(
         (ccsrp_ctx_t)ctx,
         username,
-        strlen(password),
+        password_len,
         password,
         salt_len,
         salt,
         B,
-        nullptr
+        M_bytes
     );
 }
 
@@ -335,14 +338,22 @@ int native_bridge_aes_gcm_decrypt(
         plaintext
     );
 
-    /* verify tag */
+    /* verify tag using a local mutable buffer to avoid writing to read-only memory */
+    void *temp_tag = malloc(tag_len);
+    if (!temp_tag) {
+        free(ctx);
+        return -1;
+    }
+    memcpy(temp_tag, tag, tag_len);
+
     int rc = ccgcm_finalize(
         mode,
         ctx,
         tag_len,
-        (void *)tag   // corecrypto API requires mutable buffer
+        temp_tag
     );
 
+    free(temp_tag);
     free(ctx);
     return rc;
 }

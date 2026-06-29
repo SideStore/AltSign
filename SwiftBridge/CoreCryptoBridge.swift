@@ -62,7 +62,7 @@ public enum CoreCryptoBridge {
 
         public func processChallenge(
             username: String,
-            password: String,
+            password: Data,
             salt: Data,
             serverPublicKey: Data
         ) -> Data? {
@@ -73,6 +73,7 @@ public enum CoreCryptoBridge {
             verboseLog("""
             [AltSign] CoreCryptoBridge.SRP.processChallenge starting:
               • Username: \(username)
+              • Password size: \(password.count) bytes
               • Salt size: \(salt.count) bytes
               • Server Public Key size: \(serverPublicKey.count) bytes
               • Session Key Length: \(size)
@@ -80,19 +81,22 @@ public enum CoreCryptoBridge {
 
             var M1 = Data(count: size)
 
-            let result = M1.withUnsafeMutableBytes { _ in
+            let result = M1.withUnsafeMutableBytes { m1Bytes in
                 salt.withUnsafeBytes { saltBytes in
                     serverPublicKey.withUnsafeBytes { bBytes in
-
-                        native_bridge_ccsrp_client_process_challenge(
-                            ctx,
-                            saltBytes.baseAddress,
-                            salt.count,
-                            bBytes.baseAddress,
-                            serverPublicKey.count,
-                            username,
-                            password
-                        )
+                        password.withUnsafeBytes { pwdBytes in
+                            native_bridge_ccsrp_client_process_challenge(
+                                ctx,
+                                saltBytes.baseAddress,
+                                salt.count,
+                                bBytes.baseAddress,
+                                serverPublicKey.count,
+                                username,
+                                pwdBytes.baseAddress,
+                                password.count,
+                                m1Bytes.baseAddress
+                            )
+                        }
                     }
                 }
             }

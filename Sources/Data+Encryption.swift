@@ -6,31 +6,33 @@
 import Foundation
 import NativeBridge
 
-enum EncryptionError: Error {
-    case decryptFailed
-}
-
 extension Data {
+    private func hex() -> Data {
+        let hexString = map { String(format: "%02hhx", $0) }.joined()
+        return Data(hexString.utf8)
+    }
 
-    func aesCBCDecrypt(
-        key: Data,
-        iv: Data
-    ) throws -> Data {
+    func decryptedCBC(context: GSAContext) -> Data? {
+        let key = context.makeHMACKey("extra data key:")
+        let iv = context.makeHMACKey("extra data iv:")
 
-        var output = Data(count: self.count)
+        let contiguousKey = key.startIndex == 0 ? key : Data(key)
+        let contiguousIv = iv.startIndex == 0 ? iv : Data(iv)
+        let contiguousSelf = self.startIndex == 0 ? self : Data(self)
+
+        var decryptedData = Data(count: contiguousSelf.count)
         var outputLength: size_t = 0
 
-        let result = self.withUnsafeBytes { inputPtr in
-            key.withUnsafeBytes { keyPtr in
-                iv.withUnsafeBytes { ivPtr in
-                    output.withUnsafeMutableBytes { outPtr in
-
+        let result = contiguousSelf.withUnsafeBytes { inputPtr in
+            contiguousKey.withUnsafeBytes { keyPtr in
+                contiguousIv.withUnsafeBytes { ivPtr in
+                    decryptedData.withUnsafeMutableBytes { outPtr in
                         native_bridge_aes_cbc_pkcs7_decrypt(
                             keyPtr.baseAddress,
-                            key.count,
+                            contiguousKey.count,
                             ivPtr.baseAddress,
                             inputPtr.baseAddress,
-                            self.count,
+                            contiguousSelf.count,
                             outPtr.baseAddress,
                             &outputLength
                         )
@@ -39,97 +41,55 @@ extension Data {
             }
         }
 
-        guard result == 0 else {
-            throw EncryptionError.decryptFailed
-        }
-
-        output.removeSubrange(outputLength..<output.count)
-        return output
-    }
-
-    // MARK: - AES GCM
-
-    func aesGCMDecrypt(
-        key: Data,
-        nonce: Data,
-        aad: Data?,
-        tag: Data
-    ) throws -> Data {
-
-        var plaintext = Data(count: self.count)
-
-        let rc = self.withUnsafeBytes { cipherPtr in
-            key.withUnsafeBytes { keyPtr in
-                nonce.withUnsafeBytes { noncePtr in
-                    tag.withUnsafeBytes { tagPtr in
-                        plaintext.withUnsafeMutableBytes { plainPtr in
-
-                            native_bridge_aes_gcm_decrypt(
-                                keyPtr.baseAddress,
-                                key.count,
-                                noncePtr.baseAddress,
-                                nonce.count,
-                                aad?.withUnsafeBytes { $0.baseAddress },
-                                aad?.count ?? 0,
-                                cipherPtr.baseAddress,
-                                self.count,
-                                tagPtr.baseAddress,
-                                tag.count,
-                                plainPtr.baseAddress
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        guard rc == 0 else {
-            throw EncryptionError.decryptFailed
-        }
-
-        return plaintext
-    }
-}
-
-// MARK: - AltSign compatibility (GSAContext helpers)
-
-extension Data {
-
-    func decryptedCBC(context: GSAContext) -> Data? {
-        guard let key = context.sessionKey else { return nil }
-
-        // AltSign format:
-        // first 16 bytes = IV
-        // remaining      = ciphertext
-        guard self.count > 16 else { return nil }
-
-        let iv = self.prefix(16)
-        let ciphertext = self.dropFirst(16)
-
-        return try? Data(ciphertext).aesCBCDecrypt(
-            key: key,
-            iv: iv
-        )
+        guard result == 0 else { return nil }
+        decryptedData.removeSubrange(outputLength..<decryptedData.count)
+        return decryptedData
     }
 
     func decryptedGCM(context: GSAContext) -> Data? {
         guard let key = context.sessionKey else { return nil }
 
-        // AltSign GCM layout:
-        // 0..<12   = nonce
-        // 12..<(n-16) = ciphertext
-        // last 16  = tag
-        guard self.count > (12 + 16) else { return nil }
+        let versionSize = 3
+        let ivSize = 16
+        let tagSize = 16
 
-        let nonce = self.prefix(12)
-        let tag = self.suffix(16)
-        let ciphertext = self.dropFirst(12).dropLast(16)
+        let minSize = versionSize + ivSize + tagSize
+        guard self.count > minSize else { return nil }
 
-        return try? Data(ciphertext).aesGCMDecrypt(
-            key: key,
-            nonce: nonce,
-            aad: nil,
-            tag: tag
-        )
+        let decryptedSize = self.count - minSize
+        var decryptedData = Data(count: decryptedSize)
+
+        let contiguousKey = key.startIndex == 0 ? key : Data(key)
+        let contiguousSelf = self.startIndex == 0 ? self : Data(self)
+
+        let result = contiguousSelf.withUnsafeBytes { rawBuffer -> Int32 in
+            guard let baseAddress = rawBuffer.baseAddress else { return -1 }
+            
+            let versionPtr = baseAddress
+            let ivPtr = baseAddress.advanced(by: versionSize)
+            let cipherPtr = baseAddress.advanced(by: versionSize + ivSize)
+            let tagPtr = baseAddress.advanced(by: contiguousSelf.count - tagSize)
+            
+            return contiguousKey.withUnsafeBytes { keyBytes in
+                decryptedData.withUnsafeMutableBytes { outBytes in
+                    native_bridge_aes_gcm_decrypt(
+                        keyBytes.baseAddress,
+                        contiguousKey.count,
+                        ivPtr,
+                        ivSize,
+                        versionPtr,
+                        versionSize,
+                        cipherPtr,
+                        decryptedSize,
+                        tagPtr,
+                        tagSize,
+                        outBytes.baseAddress
+                    )
+                }
+            }
+        }
+
+        guard result == 0 else { return nil }
+        return decryptedData
     }
 }
