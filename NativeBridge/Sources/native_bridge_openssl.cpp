@@ -71,14 +71,26 @@ int native_bridge_pkcs12_extract(
     EVP_PKEY *key = nullptr;
     X509 *cert = nullptr;
 
-    bool parsed = PKCS12_parse(p12, password, &key, &cert, nullptr);
-    if (!parsed && password == nullptr)
+    bool parsed = false;
+    const char *passwords[] = { password, "", nullptr };
+    bool tried_null = false;
+    bool tried_empty = false;
+    
+    for (const char *pass : passwords)
     {
-        parsed = PKCS12_parse(p12, "", &key, &cert, nullptr);
-    }
-    if (!parsed && password != nullptr && strcmp(password, "") != 0)
-    {
-        parsed = PKCS12_parse(p12, nullptr, &key, &cert, nullptr);
+        if (pass == nullptr)
+        {
+            if (tried_null) continue;
+            tried_null = true;
+        }
+        else if (strcmp(pass, "") == 0)
+        {
+            if (tried_empty) continue;
+            tried_empty = true;
+        }
+        
+        parsed = PKCS12_parse(p12, pass, &key, &cert, nullptr);
+        if (parsed) break;
     }
 
     if (!parsed)
