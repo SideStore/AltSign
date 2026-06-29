@@ -268,6 +268,10 @@ extension ALTError: CustomNSError {
     public init(_ code: ALTError) {
         self = code
     }
+
+    public static func invalidApp(reason: String) -> NSError {
+        return NSError(domain: AltSignErrorDomain, code: ALTError.invalidApp.rawValue, userInfo: [NSLocalizedFailureReasonErrorKey: reason])
+    }
 }
 
 extension ALTAppleAPIError: CustomNSError {
