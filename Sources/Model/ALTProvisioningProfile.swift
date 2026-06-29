@@ -74,8 +74,7 @@ public final class ALTProvisioningProfile: NSObject, NSCopying {
             let teamName = dict["TeamName"] as? String,
             let creationDate = dict["CreationDate"] as? Date,
             let expirationDate = dict["ExpirationDate"] as? Date,
-            let entitlementsRaw = dict["Entitlements"] as? [String: Any],
-            let deviceIDs = dict["ProvisionedDevices"] as? [String]
+            let entitlementsRaw = dict["Entitlements"] as? [String: Any]
         else {
             return nil
         }
@@ -91,7 +90,7 @@ public final class ALTProvisioningProfile: NSObject, NSCopying {
         self.entitlements = entitlementsRaw.reduce(into: [ALTEntitlement: Any]()) { dict, pair in
             dict[ALTEntitlement(rawValue: pair.key)] = pair.value
         }
-        self.deviceIDs = deviceIDs
+        self.deviceIDs = (dict["ProvisionedDevices"] as? [String]) ?? []
         self.isFreeProvisioningProfile = (dict["LocalProvision"] as? Bool) ?? false
 
         // Bundle ID extraction (same logic)
