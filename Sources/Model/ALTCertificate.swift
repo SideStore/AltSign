@@ -212,7 +212,7 @@ public final class ALTCertificate: NSObject {
 }
 
 public extension Data {
-    public var isPKCS12: Bool {
+    var isPKCS12: Bool {
         guard self.count > 6 else { return false }
         guard self[0] == 0x30 else { return false } // Must be SEQUENCE
         
