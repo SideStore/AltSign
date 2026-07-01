@@ -102,7 +102,6 @@ public enum LdidBridge {
             return entitlementProvider(path)
         }
         _LdidCallbackStorage.progress = {
-            verboseLog("[AltSign] LdidBridge.sign progress trampoline callback triggered")
             progress()
         }
 
