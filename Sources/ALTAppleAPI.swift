@@ -2,7 +2,7 @@
 //  ALTAppleAPI.swift
 //  AltSign
 //
-//  Direct Swift port of ALTAppleAPI.m (behavior preserved)
+//  Direct Swift port of ALTAppleAPI.m
 //
 
 import Foundation
@@ -53,6 +53,7 @@ public final class ALTAppleAPI: NSObject {
     public let servicesBaseURL: URL
 
     private override init() {
+        NSError.registerErrorProviders()
         session = URLSession(configuration: .ephemeral)
         dateFormatter = ISO8601DateFormatter()
         baseURL = URL(

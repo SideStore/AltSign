@@ -4,7 +4,6 @@
 //  AltSign
 //
 //  Swift port of ALTCapabilities.h/.m
-//  Behavior preserved 1:1
 //
 
 import Foundation

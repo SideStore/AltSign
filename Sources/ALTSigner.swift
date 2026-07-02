@@ -17,6 +17,7 @@ public final class ALTSigner: NSObject {
     // MARK: Init
 
     public init(team: ALTTeam, certificate: ALTCertificate) {
+        NSError.registerErrorProviders()
         self.team = team
         self.certificate = certificate
         super.init()

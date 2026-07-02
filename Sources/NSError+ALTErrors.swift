@@ -59,51 +59,44 @@ extension ALTAppleAPIError {
     }
 }
 
-// MARK: Install providers (Swift replacement for +load)
-
-private let _installALTErrorProviders: Void = {
-
-    NSError.setUserInfoValueProvider(forDomain: AltSignErrorDomain) { error, key in
-        let nsError = error as NSError
-
-        if key == NSLocalizedDescriptionKey {
-            if nsError.altsignLocalizedFailure != nil { return nil }
-            return nsError.localizedFailureReason
-        }
-
-        if key == NSLocalizedFailureReasonErrorKey {
-            return nsError.altLocalizedFailureReason
-        }
-
-        return nil
-    }
-
-    NSError.setUserInfoValueProvider(forDomain: ALTAppleAPIErrorDomain) { error, key in
-        let nsError = error as NSError
-
-        if key == NSLocalizedDescriptionKey {
-            if nsError.altsignLocalizedFailure != nil { return nil }
-            return nsError.localizedFailureReason
-        }
-
-        if key == NSLocalizedFailureReasonErrorKey {
-            return nsError.altAppleAPILocalizedFailureReason
-        }
-
-        if key == NSLocalizedRecoverySuggestionErrorKey {
-            return nsError.altAppleAPILocalizedRecoverySuggestion
-        }
-
-        return nil
-    }
-}()
-
-// force execution (Swift +load equivalent)
-private let __installErrors: Void = { _ = _installALTErrorProviders }()
-
-// MARK: NSError helpers
+// MARK: Install providers
 
 extension NSError {
+    public static func registerErrorProviders() {
+        NSError.setUserInfoValueProvider(forDomain: AltSignErrorDomain) { error, key in
+            let nsError = error as NSError
+
+            if key == NSLocalizedDescriptionKey {
+                if nsError.altsignLocalizedFailure != nil { return nil }
+                return nsError.localizedFailureReason
+            }
+
+            if key == NSLocalizedFailureReasonErrorKey {
+                return nsError.altLocalizedFailureReason
+            }
+
+            return nil
+        }
+
+        NSError.setUserInfoValueProvider(forDomain: ALTAppleAPIErrorDomain) { error, key in
+            let nsError = error as NSError
+
+            if key == NSLocalizedDescriptionKey {
+                if nsError.altsignLocalizedFailure != nil { return nil }
+                return nsError.localizedFailureReason
+            }
+
+            if key == NSLocalizedFailureReasonErrorKey {
+                return nsError.altAppleAPILocalizedFailureReason
+            }
+
+            if key == NSLocalizedRecoverySuggestionErrorKey {
+                return nsError.altAppleAPILocalizedRecoverySuggestion
+            }
+
+            return nil
+        }
+    }
 
     var altsignLocalizedFailure: String? {
         if let value = userInfo[NSLocalizedFailureErrorKey] as? String {
@@ -231,17 +224,17 @@ extension NSError {
             )
 
         case .invalidAnisetteData:
-#if os(macOS)
+            #if os(macOS)
             return NSLocalizedString(
                 "Make sure this computer's date & time matches your iOS device and try again.",
                 comment: ""
             )
-#else
+            #else
             return NSLocalizedString(
                 "Make sure your computer's date & time matches your iOS device and try again. You may need to re-install AltStore with AltServer if the problem persists.",
                 comment: ""
             )
-#endif
+            #endif
 
         default:
             return nil
