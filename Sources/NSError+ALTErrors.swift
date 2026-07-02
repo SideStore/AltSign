@@ -174,7 +174,7 @@ extension NSError {
             return NSLocalizedString("The bundle identifier for this app is invalid.", comment: "")
 
         case .bundleIdentifierUnavailable:
-            return NSLocalizedString("The bundle identifier for this app has already been registered.", comment: "")
+            return NSLocalizedString("Requested bundle identifier is unavailable for registration or already registered by another developer account.", comment: "")
 
         case .appIDDoesNotExist:
             return NSLocalizedString("There is no App ID with the requested identifier on this team.", comment: "")
