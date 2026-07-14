@@ -103,18 +103,33 @@ private extension ALTSigner {
             verboseLog("[AltSign] Writing mobileprovision to: \(profileURL.path)")
             try profile.data.write(to: profileURL)
 
+            verboseLog("[AltSign] Original profile entitlements: \(profile.entitlements)")
+            let applicationEntitlements = app.entitlements
             var filtered = profile.entitlements
-            verboseLog("[AltSign] Original profile entitlements: \(filtered)")
 
             for (key, _) in profile.entitlements {
-                if app.entitlements[key] == nil {
-
-                    if key == ALTEntitlementApplicationIdentifier ||
-                       key == ALTEntitlementTeamIdentifier ||
-                       key == ALTEntitlementGetTaskAllow {
-                        continue
+                if let applicationValue = applicationEntitlements[key] {
+                    if key == ALTEntitlementKeychainAccessGroups {
+                        guard let groups = applicationValue as? [String] else {
+                            verboseLog("The app's keychain-access-groups entitlement is not an array of strings.")
+                            continue
+                        }
+                        
+                        filtered[key] = try groups.map { group in
+                            guard let separator = group.firstIndex(of: ".") else {
+                                throw NSError(
+                                    domain: AltSignErrorDomain,
+                                    code: ALTError.invalidApp.rawValue,
+                                    userInfo: [NSLocalizedFailureReasonErrorKey: "The keychain access group '\(group)' does not contain a Team ID prefix."]
+                                )
+                            }
+                            
+                            return profile.teamIdentifier + group[separator...]
+                        }
                     }
-
+                } else if key != ALTEntitlementApplicationIdentifier &&
+                            key != ALTEntitlementTeamIdentifier &&
+                            key != ALTEntitlementGetTaskAllow {
                     filtered.removeValue(forKey: key)
                 }
             }
