@@ -48,11 +48,11 @@ public final class ALTAccount: NSObject {
             let appleID = responseDictionary["email"] as? String,
             let identifierNumber = responseDictionary["personId"] as? NSNumber,
             let firstName =
-                (responseDictionary["firstName"]
-                 ?? responseDictionary["dsFirstName"]) as? String,
+                (responseDictionary["dsFirstName"]
+                 ?? responseDictionary["firstName"]) as? String,
             let lastName =
-                (responseDictionary["lastName"]
-                 ?? responseDictionary["dsLastName"]) as? String
+                (responseDictionary["dsLastName"]
+                 ?? responseDictionary["lastName"]) as? String
         else {
             return nil
         }
